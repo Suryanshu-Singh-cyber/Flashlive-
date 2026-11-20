@@ -11,7 +11,6 @@
 const FIREBASE_AUTH_MESSAGES: Record<string, string> = {
   'auth/configuration-not-found': 'Firebase Authentication is not enabled for this project. Enable it in Firebase Console → Authentication.',
   'auth/operation-not-allowed': 'This sign-in provider is not enabled. Enable Email/Password or Google in Firebase Console → Authentication.',
-  'auth/unauthorized-domain': 'This domain is not authorized for Firebase Auth. Add it under Authentication → Settings → Authorized domains.',
   'auth/invalid-credential': 'Invalid email or password.',
   'auth/wrong-password': 'Invalid email or password.',
   'auth/user-not-found': 'No account exists for this email.',
@@ -30,6 +29,10 @@ const FIREBASE_AUTH_MESSAGES: Record<string, string> = {
 
 export function authErrorMessage(error: unknown): string {
   const code = typeof error === 'object' && error !== null && 'code' in error ? String((error as { code?: unknown }).code) : '';
+  if (code === 'auth/unauthorized-domain') {
+    const host = typeof window !== 'undefined' ? window.location.hostname : 'this domain';
+    return `Domain ${host} is not authorized for Firebase Auth. Add it under Authentication → Settings → Authorized domains.`;
+  }
   if (code && FIREBASE_AUTH_MESSAGES[code]) return FIREBASE_AUTH_MESSAGES[code];
   return error instanceof Error ? error.message : 'Authentication failed.';
 }
