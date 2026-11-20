@@ -24,6 +24,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './common/errors.js';
+import { corsOrigin } from './common/cors.js';
 import { authRouter } from './modules/auth/routes.js';
 import { githubRouter } from './modules/github/routes.js';
 import { projectsRouter } from './modules/projects/routes.js';
@@ -38,7 +39,7 @@ export function createApp() {
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
   app.use(helmet());
-  app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
+  app.use(cors({ origin: corsOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
   app.use('/sites', express.static(env.FLASHLIVE_ARTIFACT_DIR));
   app.use('/api', rateLimit({

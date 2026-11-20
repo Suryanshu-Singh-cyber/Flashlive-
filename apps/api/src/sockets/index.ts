@@ -22,8 +22,8 @@
 
 import type { Server as HttpServer } from 'node:http';
 import { Server, type Socket } from 'socket.io';
-import { env } from '../config/env.js';
 import { query } from '../db/pool.js';
+import { corsOrigin } from '../common/cors.js';
 import { verifyFirebaseIdToken } from '../middleware/auth.js';
 import { logger } from '../common/logger.js';
 
@@ -57,7 +57,7 @@ export function emitToUser(userId: string, event: string, payload: unknown) {
 
 export function initSockets(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
-    cors: { origin: env.WEB_ORIGIN, credentials: true },
+    cors: { origin: corsOrigin, credentials: true },
     transports: ['websocket', 'polling'],
   });
 
