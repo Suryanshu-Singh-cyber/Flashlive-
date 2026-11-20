@@ -29,6 +29,10 @@ Set `FLASHLIVE_BUILD_SLOTS=3`, start API + worker, create 20 deployments:
 
 Expected after claiming: 3 `building`, 17 `queued`, no duplicate `worker_id`/`slot_id` active owners. As builds finish, queued jobs claim released slots.
 
+A local smoke variant is `tests/concurrency/queue-smoke.mjs`. It inserts synthetic smoke deployments against `octocat/Hello-World`; with API+worker running it should report `maxBuilding <= 3`, all jobs terminal and `claimedSlots = 0`.
+
+`tests/concurrency/recovery-smoke.mjs` plants a stale `building` lease and verifies the reaper releases the slot, records a recovery event and lets the worker retry to a terminal state.
+
 ### Crash recovery
 
 1. Start a long build.
