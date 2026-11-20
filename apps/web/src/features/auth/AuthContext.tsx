@@ -36,6 +36,10 @@ import { apiService } from '@/services/api';
 import { auth, googleProvider, isFirebaseConfigured } from '@/lib/firebase';
 import { authErrorMessage } from '@/lib/authErrors';
 
+function verificationActionCodeSettings() {
+  return { url: `${window.location.origin}/verify-email`, handleCodeInApp: false };
+}
+
 interface AuthContextValue {
   firebaseUser: FirebaseUser | null;
   user: PublicUser | null;
@@ -139,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(credential.user, { displayName: name });
-        await sendEmailVerification(credential.user);
+        await sendEmailVerification(credential.user, verificationActionCodeSettings());
       } catch (err) {
         throw new Error(authErrorMessage(err));
       }
@@ -155,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resendVerification: async () => {
       if (!auth?.currentUser) throw new Error('No signed-in user.');
       try {
-        await sendEmailVerification(auth.currentUser);
+        await sendEmailVerification(auth.currentUser, verificationActionCodeSettings());
       } catch (err) {
         throw new Error(authErrorMessage(err));
       }
