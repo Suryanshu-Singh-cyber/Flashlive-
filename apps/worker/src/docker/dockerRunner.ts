@@ -26,7 +26,7 @@
 import Docker from 'dockerode';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { chmod, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import type { ClaimedDeployment } from '../queue/slotAllocator.js';
@@ -280,7 +280,13 @@ export async function executeDeployment(deployment: ClaimedDeployment, workerId:
           void activeContainer?.kill().catch(() => undefined);
         }
       })
-      .catch(() => undefined);
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.toLowerCase().includes('lease')) {
+          cancelled = true;
+          void activeContainer?.kill().catch(() => undefined);
+        }
+      });
   }, env.FLASHLIVE_HEARTBEAT_INTERVAL_MS);
   heartbeatTimer.unref();
 

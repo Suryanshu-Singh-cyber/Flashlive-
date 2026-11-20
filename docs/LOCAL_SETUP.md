@@ -45,6 +45,15 @@ docker compose up --build
 
 The worker needs permission to run sibling Docker containers. In Compose this is `/var/run/docker.sock`. On a VPS, run the worker on a Docker-capable host and keep the daemon private.
 
+If Docker pulls fail with `docker-credential-desktop` missing, pull public images once with an empty Docker config, then run Compose against the already-local images:
+
+```bash
+mkdir -p /tmp/flashlive-docker-config
+printf '{}' > /tmp/flashlive-docker-config/config.json
+DOCKER_CONFIG=/tmp/flashlive-docker-config docker pull postgres:16-alpine
+docker compose up -d db
+```
+
 ## 5. Verify
 
 - `GET http://localhost:4000/api/health`

@@ -49,6 +49,7 @@ export class LogShipper {
     if (!clean) return;
     this.sequence += 1;
     this.buffer.push({ sequence: this.sequence, level, message: clean });
+    if (this.buffer.length > 1000) this.buffer.splice(0, this.buffer.length - 1000);
     if (this.buffer.length >= 25) void this.flush();
   }
 
