@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setAuthTokenGetter(firebaseUser ? (forceRefresh?: boolean) => firebaseUser.getIdToken(forceRefresh) : null);
       setFirebaseUser(firebaseUser);
       if (!firebaseUser) {
         setUser(null);
@@ -98,11 +99,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return unsubscribe;
   }, []);
-
-  useEffect(() => {
-    setAuthTokenGetter(firebaseUser ? (forceRefresh?: boolean) => firebaseUser.getIdToken(forceRefresh) : null);
-    return () => setAuthTokenGetter(null);
-  }, [firebaseUser]);
 
   const value = useMemo<AuthContextValue>(() => ({
     firebaseUser,
