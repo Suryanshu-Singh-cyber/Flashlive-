@@ -31,7 +31,7 @@ import {
   type User as FirebaseUser,
 } from 'firebase/auth';
 import type { PublicUser } from '@flashlive/shared';
-import { apiService, setAuthTokenGetter } from '@/services/api';
+import { apiError, apiService, setAuthTokenGetter } from '@/services/api';
 import { auth, googleProvider, isFirebaseConfigured } from '@/lib/firebase';
 import { authErrorMessage } from '@/lib/authErrors';
 
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(await apiService.me());
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load profile.');
+      setError(apiError(err));
     }
   }, []);
 
@@ -80,7 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const firebaseAuth = auth;
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
       setAuthTokenGetter(firebaseUser ? (forceRefresh?: boolean) => firebaseUser.getIdToken(forceRefresh) : null);
       setFirebaseUser(firebaseUser);
       if (!firebaseUser) {
@@ -92,7 +93,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(await apiService.me());
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to sync profile.');
+        const message = apiError(err);
+        if (message === 'Missing bearer token.' || message === 'Firebase token is invalid or expired.') {
+          setAuthTokenGetter(null);
+          setFirebaseUser(null);
+          setUser(null);
+          setError(null);
+          await signOut(firebaseAuth).catch(() => undefined);
+        } else {
+          setError(message);
+        }
       } finally {
         setLoading(false);
       }
@@ -111,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!auth) throw new Error('Firebase is not configured.');
       try {
         await signInWithPopup(auth, googleProvider);
+        await refreshUser().catch(() => undefined);
       } catch (err) {
         throw new Error(authErrorMessage(err));
       }
