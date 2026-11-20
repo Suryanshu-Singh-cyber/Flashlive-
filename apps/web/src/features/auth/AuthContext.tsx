@@ -31,7 +31,7 @@ import {
   type User as FirebaseUser,
 } from 'firebase/auth';
 import type { PublicUser } from '@flashlive/shared';
-import { apiService } from '@/services/api';
+import { apiService, setAuthTokenGetter } from '@/services/api';
 import { auth, googleProvider, isFirebaseConfigured } from '@/lib/firebase';
 import { authErrorMessage } from '@/lib/authErrors';
 
@@ -98,6 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    setAuthTokenGetter(firebaseUser ? (forceRefresh?: boolean) => firebaseUser.getIdToken(forceRefresh) : null);
+    return () => setAuthTokenGetter(null);
+  }, [firebaseUser]);
 
   const value = useMemo<AuthContextValue>(() => ({
     firebaseUser,

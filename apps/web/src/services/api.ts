@@ -36,8 +36,14 @@ export const api = axios.create({
   timeout: 20_000,
 });
 
+let authTokenGetter: ((forceRefresh?: boolean) => Promise<string | undefined>) | null = null;
+
+export function setAuthTokenGetter(getter: ((forceRefresh?: boolean) => Promise<string | undefined>) | null) {
+  authTokenGetter = getter;
+}
+
 api.interceptors.request.use(async (config) => {
-  const token = await auth?.currentUser?.getIdToken();
+  const token = authTokenGetter ? await authTokenGetter() : await auth?.currentUser?.getIdToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -46,7 +52,9 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
   const config = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
   if (error.response?.status === 401 && config && !config._retry) {
     config._retry = true;
-    const token = await auth?.currentUser?.getIdToken(true).catch(() => undefined);
+    const token = authTokenGetter
+      ? await authTokenGetter(true).catch(() => undefined)
+      : await auth?.currentUser?.getIdToken(true).catch(() => undefined);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
       return api(config);
