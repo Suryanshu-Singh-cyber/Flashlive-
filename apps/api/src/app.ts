@@ -40,6 +40,7 @@ export function createApp() {
   app.use(helmet());
   app.use(cors({ origin: env.WEB_ORIGIN, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
+  app.use('/sites', express.static(env.FLASHLIVE_ARTIFACT_DIR));
   app.use('/api', rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 600,

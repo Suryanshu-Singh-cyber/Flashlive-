@@ -54,8 +54,11 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-http://localhost:8080/api/github/callback}
       FLASHLIVE_BUILD_SLOTS: ${FLASHLIVE_BUILD_SLOTS:-3}
+      FLASHLIVE_ARTIFACT_DIR: /artifacts
     ports:
       - "4000:4000"
+    volumes:
+      - artifacts:/artifacts:ro
     depends_on:
       db:
         condition: service_healthy

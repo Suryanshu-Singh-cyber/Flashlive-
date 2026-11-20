@@ -37,6 +37,7 @@ const envSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string().optional(),
   GITHUB_CALLBACK_URL: z.string().url().optional(),
   FLASHLIVE_BUILD_SLOTS: z.coerce.number().int().min(1).max(20).default(3),
+  FLASHLIVE_ARTIFACT_DIR: z.string().min(1).default('../worker/artifacts'),
 });
 
 const parsed = envSchema.safeParse(process.env);
