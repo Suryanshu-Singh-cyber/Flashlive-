@@ -51,7 +51,6 @@ export function LoginPage() {
     setLoading('email');
     try {
       await signInWithEmail(email, password);
-      navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed.');
     } finally {

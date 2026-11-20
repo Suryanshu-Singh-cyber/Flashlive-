@@ -47,8 +47,8 @@ export function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const score = useMemo(() => strength(password), [password]);
   useEffect(() => {
-    if (user && loading !== 'email') navigate('/dashboard', { replace: true });
-  }, [user, loading, navigate]);
+    if (user?.emailVerified) navigate('/dashboard', { replace: true });
+  }, [user, navigate]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();

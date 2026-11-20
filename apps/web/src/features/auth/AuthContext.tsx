@@ -63,15 +63,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const refreshUser = useCallback(async () => {
-    if (!auth?.currentUser) {
+    const firebaseAuth = auth;
+    const currentUser = firebaseAuth?.currentUser;
+    if (!firebaseAuth || !currentUser) {
       setUser(null);
       return;
     }
+    setAuthTokenGetter((forceRefresh?: boolean) => currentUser.getIdToken(forceRefresh));
     try {
       setUser(await apiService.me());
       setError(null);
     } catch (err) {
-      setError(apiError(err));
+      const message = apiError(err);
+      if (message === 'Missing bearer token.' || message === 'Firebase token is invalid or expired.') {
+        setAuthTokenGetter(null);
+        setFirebaseUser(null);
+        setUser(null);
+        setError(null);
+        await signOut(firebaseAuth).catch(() => undefined);
+      } else {
+        setError(message);
+      }
     }
   }, []);
 
@@ -130,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!auth) throw new Error('Firebase is not configured.');
       try {
         await signInWithEmailAndPassword(auth, email, password);
+        await refreshUser().catch(() => undefined);
       } catch (err) {
         throw new Error(authErrorMessage(err));
       }
