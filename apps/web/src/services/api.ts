@@ -65,7 +65,7 @@ export const apiService = {
   createProject: (payload: unknown) => api.post<{ project: Project }>('/api/projects', payload).then((r) => r.data.project),
   updateProject: (id: string, payload: unknown) => api.patch<{ project: Project }>(`/api/projects/${id}`, payload).then((r) => r.data.project),
   deleteProject: (id: string) => api.delete(`/api/projects/${id}`),
-  projectEnv: (id: string) => api.get(`/api/projects/${id}/env`).then((r) => r.data.variables),
+  projectEnv: (id: string) => api.get<{ variables: Array<{ key: string; updatedAt: string }> }>(`/api/projects/${id}/env`).then((r) => r.data.variables),
   saveProjectEnv: (id: string, variables: Array<{ key: string; value: string }>) => api.put(`/api/projects/${id}/env`, { variables }),
 
   deployments: (filters: { projectId?: string; status?: string } = {}) => api.get<{ deployments: Deployment[] }>('/api/deployments', { params: filters }).then((r) => r.data.deployments),

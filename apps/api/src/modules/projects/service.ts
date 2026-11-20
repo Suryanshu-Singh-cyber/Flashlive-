@@ -92,7 +92,7 @@ export async function createProject(userId: string, input: ProjectCreateInput): 
       last_deployment_at AS "lastDeploymentAt"`,
     [
       userId,
-      input.githubAccountId ?? accountId,
+      accountId,
       input.name,
       input.repositoryFullName,
       input.repositoryId,

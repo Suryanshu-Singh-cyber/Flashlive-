@@ -18,7 +18,8 @@
     "build": "npm run build:web && npm run build:api && npm run build:worker",
     "db:migrate": "node database/scripts/migrate.mjs",
     "db:seed": "node database/scripts/seed.mjs",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present && npm run test:unit",
+    "test:unit": "tsx --test tests/unit/*.test.ts",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
   },

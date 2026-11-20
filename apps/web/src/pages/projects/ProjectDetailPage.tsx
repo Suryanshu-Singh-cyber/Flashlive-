@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { GitBranch, Rocket, Save, Trash2 } from 'lucide-react';
+import { GitBranch, KeyRound, Rocket, Save, Trash2 } from 'lucide-react';
 import type { Deployment, Project } from '@flashlive/shared';
 import { apiService, apiError } from '@/services/api';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +31,10 @@ export function ProjectDetailPage() {
   const [name, setName] = useState('');
   const [branch, setBranch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [envText, setEnvText] = useState('');
+  const [envKeys, setEnvKeys] = useState<string[]>([]);
+  const [savingEnv, setSavingEnv] = useState(false);
+  const [envMessage, setEnvMessage] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -40,6 +44,8 @@ export function ProjectDetailPage() {
       setName(projectData.name);
       setBranch(projectData.branch);
       setDeployments(deploymentData);
+      const variables = await apiService.projectEnv(projectId).catch(() => [] as Array<{ key: string }>);
+      setEnvKeys(variables.map((variable) => variable.key));
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -71,6 +77,31 @@ export function ProjectDetailPage() {
       setError(apiError(err));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const saveEnv = async () => {
+    setSavingEnv(true);
+    setEnvMessage(null);
+    setError(null);
+    try {
+      const variables = envText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#'))
+        .map((line) => {
+          const index = line.indexOf('=');
+          if (index <= 0) throw new Error(`Invalid env line: ${line}`);
+          return { key: line.slice(0, index).trim(), value: line.slice(index + 1) };
+        });
+      await apiService.saveProjectEnv(projectId, variables);
+      setEnvKeys(variables.map((variable) => variable.key));
+      setEnvText('');
+      setEnvMessage('Environment variables saved.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : apiError(err));
+    } finally {
+      setSavingEnv(false);
     }
   };
 
@@ -122,6 +153,23 @@ export function ProjectDetailPage() {
           </div>
         </Card>
       </div>
+      <Card>
+        <CardHeader><div><h2 className="font-condensed text-2xl uppercase">Environment variables</h2><p className="text-sm text-muted">Encrypted at rest and injected only into build containers.</p></div><KeyRound className="h-5 w-5 text-primary" /></CardHeader>
+        {envKeys.length > 0 && <div className="mb-4 flex flex-wrap gap-2">{envKeys.map((key) => <span key={key} className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 font-mono text-xs text-primary">{key}</span>)}</div>}
+        <label className="block text-sm text-muted">One variable per line as <span className="font-mono text-ink">KEY=value</span>. Saving replaces the stored set; values are never shown again.</label>
+        <textarea
+          value={envText}
+          onChange={(event) => setEnvText(event.target.value)}
+          rows={5}
+          placeholder={'VITE_API_URL=https://api.example.com\nVITE_FEATURE_FLAG=true'}
+          className="mt-3 w-full rounded-xl border border-line bg-surface px-4 py-3 font-mono text-sm text-ink placeholder:text-muted/60 focus:border-primary/70 focus:outline-none focus:ring-2 focus:ring-primary/15"
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Button variant="secondary" onClick={() => void saveEnv()} loading={savingEnv}><Save className="h-4 w-4" /> Save variables</Button>
+          {envMessage && <span className="text-sm text-emerald-300">{envMessage}</span>}
+        </div>
+        <p className="mt-3 text-xs text-amber-200/80">Warning: Vite may embed variables into public JavaScript. Never put backend secrets here.</p>
+      </Card>
     </div>
   );
 }
