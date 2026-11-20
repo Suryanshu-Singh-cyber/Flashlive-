@@ -25,8 +25,7 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
-  getRedirectResult,
-  signInWithRedirect,
+  signInWithPopup,
   signOut,
   updateProfile,
   type User as FirebaseUser,
@@ -100,21 +99,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    if (!auth) return;
-    let active = true;
-    void getRedirectResult(auth)
-      .then((result) => {
-        if (active && result?.user) setError(null);
-      })
-      .catch((err) => {
-        if (active) setError(authErrorMessage(err));
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
   const value = useMemo<AuthContextValue>(() => ({
     firebaseUser,
     user,
@@ -125,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGoogle: async () => {
       if (!auth) throw new Error('Firebase is not configured.');
       try {
-        await signInWithRedirect(auth, googleProvider);
+        await signInWithPopup(auth, googleProvider);
       } catch (err) {
         throw new Error(authErrorMessage(err));
       }
