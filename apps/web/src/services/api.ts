@@ -42,6 +42,19 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+api.interceptors.response.use(undefined, async (error: AxiosError) => {
+  const config = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
+  if (error.response?.status === 401 && config && !config._retry) {
+    config._retry = true;
+    const token = await auth?.currentUser?.getIdToken(true).catch(() => undefined);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      return api(config);
+    }
+  }
+  return Promise.reject(error);
+});
+
 export function apiError(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = (error as AxiosError<{ error?: { message?: string } }>).response?.data;

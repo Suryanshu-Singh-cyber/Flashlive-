@@ -15,7 +15,7 @@
  * /register route.
  */
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Github, Lock, Mail, User, Zap } from 'lucide-react';
@@ -35,7 +35,7 @@ function strength(password: string) {
 }
 
 export function RegisterPage() {
-  const { registerWithEmail, signInWithGoogle, configured } = useAuth();
+  const { registerWithEmail, signInWithGoogle, configured, user } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -46,6 +46,9 @@ export function RegisterPage() {
   const [loading, setLoading] = useState<'email' | 'google' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const score = useMemo(() => strength(password), [password]);
+  useEffect(() => {
+    if (user && loading !== 'email') navigate('/dashboard', { replace: true });
+  }, [user, loading, navigate]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -83,7 +86,7 @@ export function RegisterPage() {
           <p className="font-mono text-xs uppercase tracking-[0.24em] text-primary">Create account</p>
           <h2 className="mt-2 font-condensed text-4xl font-bold uppercase">Start deploying</h2>
           {error && <div className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-200">{error}</div>}
-          <Button variant="secondary" className="mt-6 w-full" disabled={!configured} onClick={async () => { setLoading('google'); try { await signInWithGoogle(); navigate('/dashboard'); } catch (err) { setError(err instanceof Error ? err.message : 'Google sign-up failed.'); } finally { setLoading(null); } }} loading={loading === 'google'}>
+          <Button variant="secondary" className="mt-6 w-full" disabled={!configured} onClick={async () => { setLoading('google'); try { await signInWithGoogle(); } catch (err) { setError(err instanceof Error ? err.message : 'Google sign-up failed.'); } finally { setLoading(null); } }} loading={loading === 'google'}>
             <Github className="h-4 w-4" /> Continue with Google
           </Button>
           <div className="my-6 flex items-center gap-4 text-xs uppercase tracking-[0.2em] text-muted"><span className="h-px flex-1 bg-line" /> or email <span className="h-px flex-1 bg-line" /></div>

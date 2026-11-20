@@ -11,6 +11,8 @@
 const FIREBASE_AUTH_MESSAGES: Record<string, string> = {
   'auth/configuration-not-found': 'Firebase Authentication is not enabled for this project. Enable it in Firebase Console → Authentication.',
   'auth/operation-not-allowed': 'This sign-in provider is not enabled. Enable Email/Password or Google in Firebase Console → Authentication.',
+  'auth/account-exists-with-different-credential': 'An account already exists with a different sign-in method.',
+  'auth/credential-already-in-use': 'This credential is already linked to another account.',
   'auth/invalid-credential': 'Invalid email or password.',
   'auth/wrong-password': 'Invalid email or password.',
   'auth/user-not-found': 'No account exists for this email.',

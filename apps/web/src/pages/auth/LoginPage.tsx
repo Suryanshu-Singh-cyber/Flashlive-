@@ -19,7 +19,7 @@
  * Credentials go only to Firebase; backend verifies ID tokens separately.
  */
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Github, Lock, Mail, Zap } from 'lucide-react';
@@ -30,8 +30,11 @@ import { Input } from '@/components/ui/Input';
 import { ParticleField } from '@/components/three/ParticleField';
 
 export function LoginPage() {
-  const { signInWithEmail, signInWithGoogle, configured, error: authError } = useAuth();
+  const { signInWithEmail, signInWithGoogle, configured, error: authError, user } = useAuth();
   const navigate = useNavigate();
+  useEffect(() => {
+    if (user) navigate('/dashboard', { replace: true });
+  }, [user, navigate]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -61,7 +64,6 @@ export function LoginPage() {
     setLoading('google');
     try {
       await signInWithGoogle();
-      navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed.');
     } finally {
