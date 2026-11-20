@@ -33,6 +33,7 @@ import {
 import type { PublicUser } from '@flashlive/shared';
 import { apiService } from '@/services/api';
 import { auth, googleProvider, isFirebaseConfigured } from '@/lib/firebase';
+import { authErrorMessage } from '@/lib/authErrors';
 
 interface AuthContextValue {
   firebaseUser: FirebaseUser | null;
@@ -103,25 +104,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser,
     signInWithGoogle: async () => {
       if (!auth) throw new Error('Firebase is not configured.');
-      await signInWithPopup(auth, googleProvider);
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (err) {
+        throw new Error(authErrorMessage(err));
+      }
     },
     signInWithEmail: async (email, password) => {
       if (!auth) throw new Error('Firebase is not configured.');
-      await signInWithEmailAndPassword(auth, email, password);
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        throw new Error(authErrorMessage(err));
+      }
     },
     registerWithEmail: async (name, email, password) => {
       if (!auth) throw new Error('Firebase is not configured.');
-      const credential = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(credential.user, { displayName: name });
-      await sendEmailVerification(credential.user);
+      try {
+        const credential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(credential.user, { displayName: name });
+        await sendEmailVerification(credential.user);
+      } catch (err) {
+        throw new Error(authErrorMessage(err));
+      }
     },
     resetPassword: async (email) => {
       if (!auth) throw new Error('Firebase is not configured.');
-      await sendPasswordResetEmail(auth, email);
+      try {
+        await sendPasswordResetEmail(auth, email);
+      } catch (err) {
+        throw new Error(authErrorMessage(err));
+      }
     },
     resendVerification: async () => {
       if (!auth?.currentUser) throw new Error('No signed-in user.');
-      await sendEmailVerification(auth.currentUser);
+      try {
+        await sendEmailVerification(auth.currentUser);
+      } catch (err) {
+        throw new Error(authErrorMessage(err));
+      }
     },
     logout: async () => {
       if (!auth) return;
