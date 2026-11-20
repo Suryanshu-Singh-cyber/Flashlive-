@@ -1,0 +1,100 @@
+/**
+ * FILE: apps/web/src/styles/index.css
+ *
+ * PURPOSE:
+ * Defines FLASHLIVE global styles, design tokens and motion utilities.
+ *
+ * WHY THIS FILE EXISTS:
+ * Centralizes the dark electric-lime visual system and accessibility rules.
+ *
+ * HOW IT WORKS:
+ * Uses CSS variables consumed by Tailwind, plus base element styles,
+ * reduced-motion handling and reusable animation classes.
+ *
+ * USED BY:
+ * apps/web/src/main.tsx and all React components.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #080808;
+  --surface: #111111;
+  --surface-elevated: #191919;
+  --surface-hover: #222222;
+  --primary: #E8FF00;
+  --primary-glow: rgba(232, 255, 0, 0.30);
+  --secondary: #00CCFF;
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A0A0;
+  --border: rgba(255, 255, 255, 0.10);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: Barlow, Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--primary);
+  color: #080808;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+@layer components {
+  .surface {
+    @apply rounded-card border border-line bg-surface;
+  }
+
+  .surface-elevated {
+    @apply rounded-card border border-line bg-elevated;
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 32px var(--primary-glow);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 28px var(--primary-glow);
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  .terminal {
+    @apply rounded-card border border-line bg-black/70 font-mono text-sm;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

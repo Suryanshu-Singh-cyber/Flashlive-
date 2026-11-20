@@ -1,0 +1,106 @@
+# FILE: docker-compose.yml
+# PURPOSE: Local FLASHLIVE infrastructure orchestration.
+# WHY: Runs PostgreSQL, API, build workers and Nginx-hosted frontend together.
+# HOW: Compose wires DATABASE_URL/API_INTERNAL_URL, shared artifact volume and
+# worker Docker socket access for sibling build containers.
+# USED BY: docker compose up --build for local full-stack development.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: flashlive
+      POSTGRES_PASSWORD: flashlive
+      POSTGRES_DB: flashlive
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flashlive -d flashlive"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    image: node:20-bookworm-slim
+    working_dir: /app
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgres://flashlive:flashlive@db:5432/flashlive
+    command: sh -c "npm ci --ignore-scripts && npm run db:migrate && npm run db:seed"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgres://flashlive:flashlive@db:5432/flashlive
+      WEB_ORIGIN: http://localhost:8080
+      PUBLIC_SITE_URL: http://localhost:8080
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-change-me-to-a-long-random-secret}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-change-me-to-a-long-random-secret}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-http://localhost:8080/api/github/callback}
+      FLASHLIVE_BUILD_SLOTS: ${FLASHLIVE_BUILD_SLOTS:-3}
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://flashlive:flashlive@db:5432/flashlive
+      API_INTERNAL_URL: http://api:4000
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-change-me-to-a-long-random-secret}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-change-me-to-a-long-random-secret}
+      FLASHLIVE_WORKER_NAME: worker-compose
+      FLASHLIVE_WORKER_CONCURRENCY: ${FLASHLIVE_BUILD_SLOTS:-3}
+      FLASHLIVE_BUILD_SLOTS: ${FLASHLIVE_BUILD_SLOTS:-3}
+      FLASHLIVE_ARTIFACT_DIR: /artifacts
+      FLASHLIVE_WORKSPACE_DIR: /workspaces
+      FLASHLIVE_DOCKER_IMAGE: ${FLASHLIVE_DOCKER_IMAGE:-node:20-alpine}
+      FLASHLIVE_BUILD_TIMEOUT_MS: ${FLASHLIVE_BUILD_TIMEOUT_MS:-300000}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - artifacts:/artifacts
+      - worker-workspaces:/workspaces
+    depends_on:
+      api:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+    volumes:
+      - artifacts:/usr/share/nginx/artifacts:ro
+
+volumes:
+  pgdata:
+  artifacts:
+  worker-workspaces:

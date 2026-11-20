@@ -1,0 +1,33 @@
+{
+  "name": "flashlive",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FLASHLIVE - GitHub-integrated deployment platform with PostgreSQL-backed concurrent build scheduling.",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @flashlive/web",
+    "dev:api": "npm run dev --workspace @flashlive/api",
+    "dev:worker": "npm run dev --workspace @flashlive/worker",
+    "build:web": "npm run build --workspace @flashlive/web",
+    "build:api": "npm run build --workspace @flashlive/api",
+    "build:worker": "npm run build --workspace @flashlive/worker",
+    "build": "npm run build:web && npm run build:api && npm run build:worker",
+    "db:migrate": "node database/scripts/migrate.mjs",
+    "db:seed": "node database/scripts/seed.mjs",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "9.1.0",
+    "pg": "8.13.1",
+    "typescript": "5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
