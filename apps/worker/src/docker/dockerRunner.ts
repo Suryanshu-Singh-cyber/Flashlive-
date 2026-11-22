@@ -342,6 +342,7 @@ export async function executeDeployment(deployment: ClaimedDeployment, workerId:
     const installCommand = project.installCommand === 'npm ci' && !hasLockfile ? 'npm install --no-audit --no-fund' : project.installCommand;
     const installArgs = npmArgs(installCommand, ['npm', 'ci', '--no-audit', '--no-fund']);
     const buildArgs = npmArgs(project.buildCommand, ['npm', 'run', 'build']);
+    const installEnv = ['CI=true', 'npm_config_cache=/tmp/npm-cache'];
     const safeEnv = ['CI=true', 'NODE_ENV=production', 'npm_config_cache=/tmp/npm-cache'];
     const buildEnv = [...safeEnv, ...Object.entries(envVars).map(([key, value]) => `${key}=${value}`)];
 
@@ -350,7 +351,7 @@ export async function executeDeployment(deployment: ClaimedDeployment, workerId:
       cmd: installArgs,
       workspace,
       workdir: containerWorkdir,
-      env: safeEnv,
+      env: installEnv,
       shipper,
       mask,
       timeoutMs: env.FLASHLIVE_BUILD_TIMEOUT_MS,
