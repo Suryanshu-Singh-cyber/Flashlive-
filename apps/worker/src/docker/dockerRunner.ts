@@ -237,6 +237,9 @@ async function runContainer(options: {
   setActiveContainer: (container: Docker.Container | null) => void;
 }): Promise<void> {
   await ensureDockerImage();
+  const npmCacheDir = path.resolve(env.FLASHLIVE_NPM_CACHE_DIR);
+  await mkdir(npmCacheDir, { recursive: true });
+  await chmod(npmCacheDir, 0o777);
   const container = await docker.createContainer({
     Image: env.FLASHLIVE_DOCKER_IMAGE,
     Cmd: options.cmd,
@@ -244,7 +247,7 @@ async function runContainer(options: {
     User: 'node',
     Env: options.env,
     HostConfig: {
-      Binds: [`${options.workspace}:/workspace`],
+      Binds: [`${options.workspace}:/workspace`, `${npmCacheDir}:/tmp/npm-cache`],
       Memory: env.FLASHLIVE_BUILD_MEMORY_MB * 1024 * 1024,
       NanoCpus: 1_000_000_000,
       PidsLimit: 128,

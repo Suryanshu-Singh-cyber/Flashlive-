@@ -34,6 +34,7 @@ const envSchema = z.object({
   FLASHLIVE_DOCKER_IMAGE: z.string().min(1).default('node:20-alpine'),
   FLASHLIVE_BUILD_TIMEOUT_MS: z.coerce.number().int().min(1000).default(300000),
   FLASHLIVE_BUILD_MEMORY_MB: z.coerce.number().int().min(256).max(16384).default(2048),
+  FLASHLIVE_NPM_CACHE_DIR: z.string().min(1).default('./.npm-cache'),
   FLASHLIVE_HEARTBEAT_INTERVAL_MS: z.coerce.number().int().min(1000).default(10000),
   FLASHLIVE_LEASE_DURATION_MS: z.coerce.number().int().min(5000).default(45000),
   FLASHLIVE_POLL_INTERVAL_MS: z.coerce.number().int().min(250).default(2000),
