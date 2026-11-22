@@ -55,4 +55,9 @@ See `.env.example`, `apps/web/.env.example`, `apps/api/.env.example` and `apps/w
 
 ## Documentation
 
-Start with `docs/LOCAL_SETUP.md`, `docs/ARCHITECTURE.md`, `docs/QUEUE_AND_RECOVERY.md`, `docs/SECURITY.md`, `docs/API.md`, `docs/TESTING.md` and `docs/VIVA_PREPARATION.md`.
+- Start here: `docs/USER_GUIDE.md` (how anyone uses it), `docs/LOCAL_SETUP.md` (run from code)
+- How it works: `docs/ARCHITECTURE.md`, `docs/FLOWS.md`, `docs/DATABASE.md`, `docs/QUEUE_AND_RECOVERY.md`
+- API & security: `docs/API.md`, `docs/SECURITY.md`
+- Capacity & limits: `docs/LIMITATIONS.md`
+- Sharing publicly: `docs/PUBLIC_SHARING.md`
+- Testing & viva: `docs/TESTING.md`, `docs/VIVA_PREPARATION.md`, `docs/VIVA_QA.md`, `docs/FILE_BY_FILE_GUIDE.md`
