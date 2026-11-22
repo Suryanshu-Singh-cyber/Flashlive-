@@ -17,7 +17,7 @@
 import { io, type Socket } from 'socket.io-client';
 import { auth } from '@/lib/firebase';
 
-const API_URL = import.meta.env.VITE_API_URL ?? '';
+const API_URL = import.meta.env.VITE_API_URL || window.location.origin;
 let socket: Socket | null = null;
 
 export async function getFlashliveSocket(): Promise<Socket> {
