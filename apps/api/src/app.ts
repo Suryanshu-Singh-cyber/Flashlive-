@@ -41,7 +41,15 @@ export function createApp() {
   app.use(helmet());
   app.use(cors({ origin: corsOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
-  app.use('/sites', express.static(env.FLASHLIVE_ARTIFACT_DIR));
+  app.use('/sites', (_req, res, next) => {
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline'; connect-src 'self' https: wss:; font-src 'self' data: https:;",
+    );
+    res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+    next();
+  }, express.static(env.FLASHLIVE_ARTIFACT_DIR));
   app.use('/api', rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 600,
