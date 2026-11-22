@@ -55,6 +55,8 @@ See `.env.example`, `apps/web/.env.example`, `apps/api/.env.example` and `apps/w
 
 ## Documentation
 
+**One-page overview:** `docs/FLASHLIVE.md` — read this first.
+
 - Start here: `docs/USER_GUIDE.md` (how anyone uses it), `docs/LOCAL_SETUP.md` (run from code)
 - How it works: `docs/ARCHITECTURE.md`, `docs/FLOWS.md`, `docs/DATABASE.md`, `docs/QUEUE_AND_RECOVERY.md`
 - API & security: `docs/API.md`, `docs/SECURITY.md`
