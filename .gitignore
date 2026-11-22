@@ -12,5 +12,6 @@ coverage/
 .pgdata/
 artifacts/
 workspaces/
+.npm-cache/
 .firebase/
 service-account*.json
