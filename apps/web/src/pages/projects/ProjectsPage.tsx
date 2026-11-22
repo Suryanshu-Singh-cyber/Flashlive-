@@ -94,7 +94,7 @@ export function ProjectsPage() {
         repositoryId: repo.id,
         branch,
         framework: 'react-vite',
-        buildCommand: 'npm run build',
+        buildCommand: 'npm run build -- --base=./',
         installCommand: 'npm ci',
         outputDirectory: 'dist',
       });

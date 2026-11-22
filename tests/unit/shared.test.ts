@@ -21,7 +21,7 @@ test('projectCreateSchema applies React+Vite defaults', () => {
   });
   assert.equal(parsed.framework, 'react-vite');
   assert.equal(parsed.branch, 'main');
-  assert.equal(parsed.buildCommand, 'npm run build');
+  assert.equal(parsed.buildCommand, 'npm run build -- --base=./');
   assert.equal(parsed.outputDirectory, 'dist');
 });
 

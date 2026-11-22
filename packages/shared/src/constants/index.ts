@@ -41,7 +41,7 @@ export const DEPLOYMENT_STATUS_TRANSITIONS: Record<DeploymentStatus, DeploymentS
 export const LOG_LEVELS = ['INFO', 'SUCCESS', 'WARNING', 'ERROR'] as const;
 
 export const SUPPORTED_FRAMEWORK = 'react-vite';
-export const DEFAULT_BUILD_COMMAND = 'npm run build';
+export const DEFAULT_BUILD_COMMAND = 'npm run build -- --base=./';
 export const DEFAULT_INSTALL_COMMAND = 'npm ci';
 export const DEFAULT_OUTPUT_DIRECTORY = 'dist';
 

@@ -26,7 +26,7 @@
 import Docker from 'dockerode';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { chmod, mkdir, readFile, rm, stat } from 'node:fs/promises';
+import { chmod, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import type { ClaimedDeployment } from '../queue/slotAllocator.js';
@@ -143,7 +143,50 @@ function npmArgs(command: string, fallback: string[]): string[] {
   return parts.length > 1 ? parts : fallback;
 }
 
-async function cloneRepository(project: ProjectContext, deployment: ClaimedDeployment, workspace: string, githubToken: string | null, log: (level: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR', message: string) => void) {
+const SKIP_SEARCH_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', '.next']);
+
+async function findPackageJsonFiles(root: string, maxDepth = 5): Promise<string[]> {
+  const found: string[] = [];
+  async function walk(dir: string, rel: string, depth: number) {
+    if (depth > maxDepth) return;
+    const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name === 'package.json') found.push(rel ? `${rel}/package.json` : 'package.json');
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory() || SKIP_SEARCH_DIRS.has(entry.name)) continue;
+      await walk(path.join(dir, entry.name), rel ? `${rel}/${entry.name}` : entry.name, depth + 1);
+    }
+  }
+  await walk(root, '', 0);
+  return found;
+}
+
+async function detectAppRoot(workspace: string): Promise<string> {
+  const candidates = (await findPackageJsonFiles(workspace)).sort(
+    (a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b),
+  );
+  let sawPackageJson = false;
+  for (const rel of candidates) {
+    const raw = await readFile(path.join(workspace, ...rel.split('/')), 'utf8').catch(() => null);
+    if (!raw) continue;
+    sawPackageJson = true;
+    let pkg: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+    try {
+      pkg = JSON.parse(raw) as typeof pkg;
+    } catch {
+      continue;
+    }
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+    if (!deps.react || !deps.vite) continue;
+    const dir = path.posix.dirname(rel);
+    return dir === '.' ? '' : dir;
+  }
+  if (sawPackageJson) throw new Error('FLASHLIVE currently supports React + Vite projects only.');
+  throw new Error('package.json was not found in the repository.');
+}
+
+async function cloneRepository(project: ProjectContext, deployment: ClaimedDeployment, workspace: string, githubToken: string | null, log: (level: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR', message: string) => void): Promise<string> {
   await mkdir(path.dirname(workspace), { recursive: true });
   await rm(workspace, { recursive: true, force: true });
   const url = `https://github.com/${project.repositoryFullName}.git`;
@@ -164,15 +207,11 @@ async function cloneRepository(project: ProjectContext, deployment: ClaimedDeplo
     }
   }
 
-  const packageJsonPath = path.join(workspace, 'package.json');
-  const packageJsonRaw = await readFile(packageJsonPath, 'utf8').catch(() => null);
-  if (!packageJsonRaw) throw new Error('package.json was not found in the repository.');
-  const packageJson = JSON.parse(packageJsonRaw) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
-  const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
-  if (!deps.react || !deps.vite) throw new Error('FLASHLIVE currently supports React + Vite projects only.');
+  const appRelativeDir = await detectAppRoot(workspace);
 
   await query('UPDATE deployments SET commit_sha = $2 WHERE id = $1', [deployment.id, head]);
-  log('SUCCESS', `Repository ready at ${head.slice(0, 12)}`);
+  log('SUCCESS', `Repository ready at ${head.slice(0, 12)}${appRelativeDir ? ` (app root: ${appRelativeDir})` : ''}`);
+  return appRelativeDir;
 }
 
 function lineHandler(ship: (line: string) => void) {
@@ -188,6 +227,7 @@ function lineHandler(ship: (line: string) => void) {
 async function runContainer(options: {
   cmd: string[];
   workspace: string;
+  workdir?: string;
   env: string[];
   shipper: LogShipper;
   mask: (message: string) => string;
@@ -200,7 +240,7 @@ async function runContainer(options: {
   const container = await docker.createContainer({
     Image: env.FLASHLIVE_DOCKER_IMAGE,
     Cmd: options.cmd,
-    WorkingDir: '/workspace',
+    WorkingDir: options.workdir ?? '/workspace',
     User: 'node',
     Env: options.env,
     HostConfig: {
@@ -292,10 +332,13 @@ export async function executeDeployment(deployment: ClaimedDeployment, workerId:
 
   try {
     await ensureDockerImage();
-    await cloneRepository(project, deployment, workspace, githubToken, log);
+    const appRelativeDir = await cloneRepository(project, deployment, workspace, githubToken, log);
+    const appDir = appRelativeDir ? path.join(workspace, ...appRelativeDir.split('/')) : workspace;
+    const containerWorkdir = appRelativeDir ? `/workspace/${appRelativeDir}` : '/workspace';
     await chmod(workspace, 0o777);
+    if (appDir !== workspace) await chmod(appDir, 0o777);
 
-    const hasLockfile = await stat(path.join(workspace, 'package-lock.json')).then(() => true).catch(() => false);
+    const hasLockfile = await stat(path.join(appDir, 'package-lock.json')).then(() => true).catch(() => false);
     const installCommand = project.installCommand === 'npm ci' && !hasLockfile ? 'npm install --no-audit --no-fund' : project.installCommand;
     const installArgs = npmArgs(installCommand, ['npm', 'ci', '--no-audit', '--no-fund']);
     const buildArgs = npmArgs(project.buildCommand, ['npm', 'run', 'build']);
@@ -306,6 +349,7 @@ export async function executeDeployment(deployment: ClaimedDeployment, workerId:
     await runContainer({
       cmd: installArgs,
       workspace,
+      workdir: containerWorkdir,
       env: safeEnv,
       shipper,
       mask,
@@ -319,6 +363,7 @@ export async function executeDeployment(deployment: ClaimedDeployment, workerId:
     await runContainer({
       cmd: buildArgs,
       workspace,
+      workdir: containerWorkdir,
       env: buildEnv,
       shipper,
       mask,
@@ -335,7 +380,7 @@ export async function executeDeployment(deployment: ClaimedDeployment, workerId:
     }
 
     log('INFO', `Publishing ${project.outputDirectory}`);
-    await publishArtifacts(workspace, project.outputDirectory, deployment.id);
+    await publishArtifacts(appDir, project.outputDirectory, deployment.id);
     log('SUCCESS', `Deployment ${deployment.id} is ready.`);
     return { outcome: 'deployed', buildDurationMs: Date.now() - started };
   } catch (error) {
