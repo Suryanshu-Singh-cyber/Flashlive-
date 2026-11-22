@@ -245,7 +245,7 @@ async function runContainer(options: {
     Env: options.env,
     HostConfig: {
       Binds: [`${options.workspace}:/workspace`],
-      Memory: 1024 * 1024 * 1024,
+      Memory: env.FLASHLIVE_BUILD_MEMORY_MB * 1024 * 1024,
       NanoCpus: 1_000_000_000,
       PidsLimit: 128,
       CapDrop: ['ALL'],
@@ -343,7 +343,8 @@ export async function executeDeployment(deployment: ClaimedDeployment, workerId:
     const installArgs = npmArgs(installCommand, ['npm', 'ci', '--no-audit', '--no-fund']);
     const buildArgs = npmArgs(project.buildCommand, ['npm', 'run', 'build']);
     const installEnv = ['CI=true', 'npm_config_cache=/tmp/npm-cache'];
-    const safeEnv = ['CI=true', 'NODE_ENV=production', 'npm_config_cache=/tmp/npm-cache'];
+    const nodeHeapMb = Math.max(512, Math.floor(env.FLASHLIVE_BUILD_MEMORY_MB * 0.75));
+    const safeEnv = ['CI=true', 'NODE_ENV=production', `NODE_OPTIONS=--max-old-space-size=${nodeHeapMb}`, 'npm_config_cache=/tmp/npm-cache'];
     const buildEnv = [...safeEnv, ...Object.entries(envVars).map(([key, value]) => `${key}=${value}`)];
 
     log('INFO', `Installing dependencies with ${installCommand}`);
