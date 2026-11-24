@@ -58,3 +58,7 @@ docker compose up -d db
 
 - `GET http://localhost:4000/api/health`
 - Sign in, connect GitHub, import a React + Vite repo, deploy, watch `/queue` and `/deployments/:id`.
+
+## Troubleshooting
+
+- **`Could not sync user profile` / `PROFILE_SYNC_FAILED`:** the API cannot reach Postgres. If `DATABASE_URL` uses `localhost`, change it to `127.0.0.1` — on Windows `localhost` resolves to IPv6 `::1`, which Docker's port mapping can reset (`ECONNRESET`). Applies to `.env`, `apps/api/.env` and `apps/worker/.env`; restart API + worker afterwards.
